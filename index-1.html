@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Grievance Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="bg-pattern">
+        <div class="floating-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+    </div>
+
+    <!-- Landing Page -->
+    <div id="landingPage">
+        <header class="header">
+            <div class="header-inner">
+                <a href="#" class="logo">
+                    <div class="logo-icon"><i class="fas fa-graduation-cap"></i></div>
+                    Grievance Portal
+                </a>
+                <nav class="nav" id="mainNav">
+                <a href="#home" class="nav-link active" onclick="showSection('home')">Home</a>
+                <a href="#about" class="nav-link" onclick="showSection('about')">About</a>
+                <a href="#contact" class="nav-link" onclick="showSection('contact')">Contact</a>
+            </nav>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <button class="hamburger" onclick="toggleMobileNav()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            </div>
+        </header>
+
+        <main class="main" id="home">
+            <section class="hero">
+                <div class="hero-badge">
+                    <i class="fas fa-bolt"></i> Quick & Easy
+                </div>
+                <h1 class="hero-title">College Grievance Portal</h1>
+                <p class="hero-subtitle">Your voice matters. Submit complaints, track status, and get resolved - all in one place. Fast, secure, and transparent.</p>
+                
+                <div class="login-grid">
+                    <div class="login-card">
+                        <div class="login-card-icon"><i class="fas fa-user-graduate"></i></div>
+                        <h3>Student Portal</h3>
+                        <p>Submit complaints, track status, and manage your grievances easily.</p>
+                        <div class="btn-group">
+                            <button class="btn btn-primary" onclick="openModal('studentLogin')">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </button>
+                            <button class="btn btn-outline" onclick="openModal('studentRegister')">
+                                <i class="fas fa-user-plus"></i> Register
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="login-card">
+                        <div class="login-card-icon"><i class="fas fa-user-shield"></i></div>
+                        <h3>Admin Portal</h3>
+                        <p>Manage complaints, update status, and handle department issues.</p>
+                        <div class="btn-group">
+                            <button class="btn btn-primary" onclick="openModal('adminLogin')">
+                                <i class="fas fa-sign-in-alt"></i> Admin Login
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- About Section -->
+        <main class="main hidden" id="about">
+            <section class="section">
+                <div class="section-header">
+                    <h2 class="section-title">About Us</h2>
+                    <p style="color: var(--gray);">Everything you need to know about our grievance system</p>
+                </div>
+                
+                <div class="about-grid">
+                    <div class="about-card">
+                        <h4><i class="fas fa-bullseye"></i> Our Mission</h4>
+                        <p>To provide a transparent, efficient, and user-friendly platform where students can voice their concerns and receive timely responses.</p>
+                    </div>
+                    <div class="about-card">
+                        <h4><i class="fas fa-cog"></i> Key Features</h4>
+                        <ul style="list-style: none;">
+                            <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--success);"></i> Real-time status tracking</li>
+                            <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--success);"></i> Secure file uploads</li>
+                            <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--success);"></i> 24/7 AI support</li>
+                            <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--success);"></i> Auto-escalation</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="about-card" style="margin-top: 2rem;">
+                    <h4><i class="fas fa-building"></i> Departments Covered</h4>
+                    <div class="dept-grid">
+                        <div class="dept-item">Computer Science</div>
+                        <div class="dept-item">Information Tech</div>
+                        <div class="dept-item">Electronics</div>
+                        <div class="dept-item">Mechanical</div>
+                        <div class="dept-item">Civil</div>
+                        <div class="dept-item">BCOM</div>
+                        <div class="dept-item">BMS</div>
+                        <div class="dept-item">JR Science</div>
+                        <div class="dept-item">JR Commerce</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Contact Section -->
+        <main class="main hidden" id="contact">
+            <section class="section">
+                <div class="section-header">
+                    <h2 class="section-title">Contact Us</h2>
+                    <p style="color: var(--gray);">Get in touch with us for any queries</p>
+                </div>
+                
+                <div class="contact-grid">
+                    <div class="contact-card">
+                        <div class="contact-icon"><i class="fas fa-code"></i></div>
+                        <h3>Developer</h3>
+                        <p>Shush<br>changes@gmail.com</p>
+                    </div>
+                    <div class="contact-card">
+                        <div class="contact-icon"><i class="fas fa-university"></i></div>
+                        <h3>Administration</h3>
+                        <p>College Admin<br>admin@college.edu</p>
+                    </div>
+                    <div class="contact-card">
+                        <div class="contact-icon"><i class="fas fa-headset"></i></div>
+                        <h3>24/7 Support</h3>
+                        <p>AI Assistant Available<br>Click the chat button</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="studentLoginModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-graduate"></i> Student Login</h2>
+                <button class="modal-close" onclick="closeModal('studentLogin')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="studentLoginForm">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="studentEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-input" id="studentPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Department (to complain about)</label>
+                        <select class="form-select" id="studentDepartment" required>
+                            <option value="">Select Department</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="IT">Information Technology</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Mechanical">Mechanical</option>
+                            <option value="Civil">Civil</option>
+                            <option value="BCOM">BCOM</option>
+                            <option value="BMS">BMS</option>
+                            <option value="JR.CLG Science-11">JR.CLG Science-11</option>
+                            <option value="JR.CLG Science-12">JR.CLG Science-12</option>
+                            <option value="JR.CLG Commerce-11">JR.CLG Commerce-11</option>
+                            <option value="JR.CLG Commerce-12">JR.CLG Commerce-12</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="studentRegisterModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-plus"></i> Student Register</h2>
+                <button class="modal-close" onclick="closeModal('studentRegister')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="studentRegisterForm">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-input" id="regName" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="regEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Student ID</label>
+                        <input type="text" class="form-input" id="regStudentId" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Department</label>
+                        <select class="form-select" id="regDepartment" required>
+                            <option value="">Select Department</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="IT">Information Technology</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Mechanical">Mechanical</option>
+                            <option value="Civil">Civil</option>
+                            <option value="BCOM">BCOM</option>
+                            <option value="BMS">BMS</option>
+                            <option value="JR.CLG Science-11">JR.CLG Science-11</option>
+                            <option value="JR.CLG Science-12">JR.CLG Science-12</option>
+                            <option value="JR.CLG Commerce-11">JR.CLG Commerce-11</option>
+                            <option value="JR.CLG Commerce-12">JR.CLG Commerce-12</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-input" id="regPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" class="form-input" id="regConfirmPassword" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        <i class="fas fa-user-plus"></i> Register
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="adminLoginModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-shield"></i> Admin Login</h2>
+                <button class="modal-close" onclick="closeModal('adminLogin')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="adminLoginForm">
+                    <div class="form-group">
+                        <label class="form-label">Admin Email</label>
+                        <input type="email" class="form-input" id="adminEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-input" id="adminPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Department</label>
+                        <select class="form-select" id="adminDepartment" required>
+                            <option value="">Select Department</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="IT">Information Technology</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Mechanical">Mechanical</option>
+                            <option value="Civil">Civil</option>
+                            <option value="BCOM">BCOM</option>
+                            <option value="BMS">BMS</option>
+                            <option value="JR.CLG Science-11">JR.CLG Science-11</option>
+                            <option value="JR.CLG Science-12">JR.CLG Science-12</option>
+                            <option value="JR.CLG Commerce-11">JR.CLG Commerce-11</option>
+                            <option value="JR.CLG Commerce-12">JR.CLG Commerce-12</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Container -->
+    <div id="dashboardContainer"></div>
+
+    <!-- Chatbot -->
+    <button class="chatbot-btn" onclick="toggleChatbot()">
+        <i class="fas fa-robot"></i>
+    </button>
+    <div class="chatbot-modal" id="chatbotModal">
+        <div class="chatbot-header">
+            <h4><i class="fas fa-robot"></i> AI Assistant</h4>
+            <button class="modal-close" style="background: rgba(255,255,255,0.2); color: white;" onclick="toggleChatbot()">&times;</button>
+        </div>
+        <div class="chatbot-messages" id="chatbotMessages">
+            <div class="chat-msg bot">Hello! How can I help you today?</div>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="chatbotInput" placeholder="Type a message...">
+            <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js"></script>
+</body>
+</html>
