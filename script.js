@@ -1,14 +1,24 @@
-// Supabase Configuration
-const SUPABASE_URL = 'https://nrijccpjldwvrixtvuxb.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5yaWpjY3BqbGR3dnJpeHR2dXhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1OTczMzAsImV4cCI6MjA4NzE3MzMzMH0.oecvi01DhNvKtugXiDVRdhWAyJS3MP9UevS2Hm-9vBc';
+// Firebase Configuration
+const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyBZX6Vk5izRvJxITWZx0KWPn45qCTJcDpI",
+    authDomain: "college-grievance-portal-64e4c.firebaseapp.com",
+    projectId: "college-grievance-portal-64e4c",
+    storageBucket: "college-grievance-portal-64e4c.firebasestorage.app",
+    messagingSenderId: "191383169494",
+    appId: "1:191383169494:web:b9bf37146fe54f11621c77",
+    measurementId: "G-T1GYCL1V4Y"
+};
 
-// Initialize Supabase client
+// Initialize Firebase & Firestore
 let db = null;
 try {
-    db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    console.log('Supabase connected');
+    if (firebase && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== 'YOUR_API_KEY') {
+        firebase.initializeApp(FIREBASE_CONFIG);
+        db = firebase.firestore();
+        console.log('Firebase connected');
+    }
 } catch (e) {
-    console.log('Supabase error:', e.message);
+    console.log('Firebase error:', e.message);
 }
 
 // Global State
@@ -48,8 +58,8 @@ async function initializeApp() {
     console.log('Initializing app...');
     localStorage.setItem('admins', JSON.stringify(admins));
     
-    // Load data from Supabase
-    await loadDataFromSupabase();
+    // Load data from Firebase
+    await loadDataFromFirebase();
     
     // Attach form handlers with null checks
     const loginForm = document.getElementById('studentLoginForm');
@@ -77,21 +87,23 @@ async function initializeApp() {
     console.log('App initialized');
 }
 
-async function loadDataFromSupabase() {
+async function loadDataFromFirebase() {
     if (!db) return;
     try {
-        // Load users
-        const { data: usersData } = await db.from('users').select('*');
-        if (usersData && usersData.length > 0) users = usersData;
+        // Load users from Firestore
+        const usersSnap = await db.collection('users').get();
+        if (!usersSnap.empty) {
+            users = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
         
-        // Load complaints and normalize to camelCase
-        const { data: complaintsData } = await db.from('complaints').select('*');
-        if (complaintsData && complaintsData.length > 0) {
-            complaints = complaintsData.map(normalizeComplaint);
+        // Load complaints from Firestore and normalize to camelCase
+        const complaintsSnap = await db.collection('complaints').get();
+        if (!complaintsSnap.empty) {
+            complaints = complaintsSnap.docs.map(doc => normalizeComplaint({ id: doc.id, ...doc.data() }));
             localStorage.setItem('complaints', JSON.stringify(complaints));
         }
     } catch (error) {
-        console.log('Using local data (Supabase error):', error.message);
+        console.log('Using local data (Firebase error):', error.message);
     }
 }
 
@@ -197,18 +209,18 @@ async function handleStudentLogin(e) {
     const password = document.getElementById('studentPassword').value;
     const departmentToComplain = document.getElementById('studentDepartment').value;
     
-    // Try Supabase first
+    // Try Firebase first
     if (db) {
         try {
-            const { data, error } = await db
-                .from('users')
-                .select('*')
-                .eq('email', email)
-                .eq('password', password)
-                .single();
+            const usersSnap = await db.collection('users')
+                .where('email', '==', email)
+                .where('password', '==', password)
+                .limit(1)
+                .get();
             
-            if (data) {
-                currentUser = { ...data, type: 'student', departmentToComplain };
+            if (!usersSnap.empty) {
+                const doc = usersSnap.docs[0];
+                currentUser = { id: doc.id, ...doc.data(), type: 'student', departmentToComplain };
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 closeModal('studentLogin');
                 showNotification('Login successful!', 'success');
@@ -216,7 +228,7 @@ async function handleStudentLogin(e) {
                 return;
             }
         } catch (err) {
-            console.log('Trying local storage');
+            console.log('Trying local storage:', err.message);
         }
     }
     
@@ -258,17 +270,18 @@ async function handleStudentRegister(e) {
         created_at: new Date().toISOString()
     };
     
-    // Save to Supabase
+    // Save to Firebase
     if (db) {
         try {
-            const { error } = await db.from('users').insert([newUser]);
-            if (!error) {
-                showNotification('Registration successful! Please login.', 'success');
-                closeModal('studentRegister');
-                return;
-            }
+            const docRef = await db.collection('users').add(newUser);
+            newUser.id = docRef.id;
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+            showNotification('Registration successful! Please login.', 'success');
+            closeModal('studentRegister');
+            return;
         } catch (err) {
-            console.log('Saving locally instead');
+            console.log('Saving locally instead:', err.message);
         }
     }
     
@@ -683,30 +696,27 @@ async function handleNewComplaint(e) {
         submittedAt: new Date().toISOString()
     };
     
-    // Save to Supabase (map to snake_case for DB)
+    // Save to Firebase Firestore
     if (db) {
         try {
-            const dbRow = {
-                student_id: newComplaint.studentId,
+            const docRef = await db.collection('complaints').add({
+                studentId: newComplaint.studentId,
                 title: newComplaint.title,
                 category: newComplaint.category,
                 description: newComplaint.description,
                 files: newComplaint.files,
                 status: newComplaint.status,
-                submitted_at: newComplaint.submittedAt
-            };
-            const { data, error } = await db.from('complaints').insert([dbRow]).select().single();
-            if (!error && data) {
-                complaints.push(normalizeComplaint(data));
-                localStorage.setItem('complaints', JSON.stringify(complaints));
-                closeComplaintModal();
-                showNotification('Complaint submitted successfully!', 'success');
-                showStudentDashboard();
-                return;
-            }
-            if (error) console.warn('Supabase insert error:', error.message);
+                submittedAt: newComplaint.submittedAt
+            });
+            newComplaint.id = docRef.id;
+            complaints.push(newComplaint);
+            localStorage.setItem('complaints', JSON.stringify(complaints));
+            closeComplaintModal();
+            showNotification('Complaint submitted successfully!', 'success');
+            showStudentDashboard();
+            return;
         } catch (err) {
-            console.log('Supabase failed, saving locally:', err.message);
+            console.log('Firebase failed, saving locally:', err.message);
         }
     }
     
@@ -824,33 +834,37 @@ function removeUploadedFile(el, name) {
     el.parentElement.remove();
 }
 
-function updateStatus(id, status) {
+async function updateStatus(id, status) {
     const c = complaints.find(x => x.id === id);
     if (c) {
         c.status = status;
         c.lastUpdated = new Date().toISOString();
         localStorage.setItem('complaints', JSON.stringify(complaints));
+        if (db) {
+            try { await db.collection('complaints').doc(String(id)).update({ status, lastUpdated: c.lastUpdated }); } catch (e) { console.warn('Firebase update failed'); }
+        }
         showNotification('Status updated!', 'success');
     }
 }
 
-function updateResponse(id, response) {
+async function updateResponse(id, response) {
     const c = complaints.find(x => x.id === id);
     if (c) {
         c.adminResponse = response;
         c.lastUpdated = new Date().toISOString();
         localStorage.setItem('complaints', JSON.stringify(complaints));
+        if (db) {
+            try { await db.collection('complaints').doc(String(id)).update({ adminResponse: response, lastUpdated: c.lastUpdated }); } catch (e) { console.warn('Firebase update failed'); }
+        }
     }
 }
 
 async function refreshComplaints() {
     if (db) {
         try {
-            const { data } = await db.from('complaints').select('*');
-            if (data) {
-                complaints = data.map(normalizeComplaint);
-                localStorage.setItem('complaints', JSON.stringify(complaints));
-            }
+            const complaintsSnap = await db.collection('complaints').get();
+            complaints = complaintsSnap.docs.map(doc => normalizeComplaint({ id: doc.id, ...doc.data() }));
+            localStorage.setItem('complaints', JSON.stringify(complaints));
         } catch (err) {
             complaints = JSON.parse(localStorage.getItem('complaints')) || [];
         }
@@ -865,11 +879,9 @@ async function refreshComplaints() {
 async function refreshAdminComplaints() {
     if (db) {
         try {
-            const { data } = await db.from('complaints').select('*');
-            if (data) {
-                complaints = data.map(normalizeComplaint);
-                localStorage.setItem('complaints', JSON.stringify(complaints));
-            }
+            const complaintsSnap = await db.collection('complaints').get();
+            complaints = complaintsSnap.docs.map(doc => normalizeComplaint({ id: doc.id, ...doc.data() }));
+            localStorage.setItem('complaints', JSON.stringify(complaints));
         } catch (err) {
             complaints = JSON.parse(localStorage.getItem('complaints')) || [];
         }
