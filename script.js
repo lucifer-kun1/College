@@ -26,13 +26,19 @@ let admins = [
 ];
 
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm', 'video/quicktime', 'application/pdf'];
-const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webb', 'mov', 'pdf'];
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm', 'mov', 'pdf'];
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
 const MAX_FILES = 10;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     console.log('App initializing...');
+    // Normalize any existing localStorage complaints (snake_case -> camelCase)
+    const local = JSON.parse(localStorage.getItem('complaints')) || [];
+    if (local.length > 0) {
+        complaints = local.map(normalizeComplaint);
+        localStorage.setItem('complaints', JSON.stringify(complaints));
+    }
     initializeApp();
     checkAutoEscalation();
     setInterval(checkAutoEscalation, 60000);
@@ -78,9 +84,12 @@ async function loadDataFromSupabase() {
         const { data: usersData } = await db.from('users').select('*');
         if (usersData && usersData.length > 0) users = usersData;
         
-        // Load complaints
+        // Load complaints and normalize to camelCase
         const { data: complaintsData } = await db.from('complaints').select('*');
-        if (complaintsData && complaintsData.length > 0) complaints = complaintsData;
+        if (complaintsData && complaintsData.length > 0) {
+            complaints = complaintsData.map(normalizeComplaint);
+            localStorage.setItem('complaints', JSON.stringify(complaints));
+        }
     } catch (error) {
         console.log('Using local data (Supabase error):', error.message);
     }
@@ -122,13 +131,31 @@ function setupDragAndDrop() {
     }, 100);
 }
 
+// Normalize complaint from Supabase (snake_case) to app format (camelCase)
+function normalizeComplaint(c) {
+    return {
+        ...c,
+        studentId: c.studentId ?? c.student_id,
+        submittedAt: c.submittedAt ?? c.submitted_at,
+        adminResponse: c.adminResponse ?? c.admin_response
+    };
+}
+
 // Section Navigation
 function showSection(sectionId, event) {
     document.querySelectorAll('.main').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
     
-    document.getElementById(sectionId).classList.remove('hidden');
-    if (event && event.target) event.target.classList.add('active');
+    const section = document.getElementById(sectionId);
+    if (section) section.classList.remove('hidden');
+    
+    // Set active nav link - use event.target or find by href
+    if (event && event.target) {
+        event.target.classList.add('active');
+    } else {
+        const activeLink = document.querySelector(`.nav-link[onclick*="'${sectionId}'"]`);
+        if (activeLink) activeLink.classList.add('active');
+    }
     
     // Close mobile nav
     const nav = document.getElementById('mainNav');
@@ -276,8 +303,15 @@ function handleAdminLogin(e) {
 
 // Dashboard Functions
 function showStudentDashboard() {
+    // Redirect: hide landing page, show dashboard
+    const landingPage = document.getElementById('landingPage');
+    const dashboardContainer = document.getElementById('dashboardContainer');
+    if (landingPage) landingPage.style.display = 'none';
+    if (dashboardContainer) dashboardContainer.style.display = 'block';
+
     const container = document.getElementById('dashboardContainer');
-    const studentComplaints = complaints.filter(c => c.studentId === currentUser.id);
+    const studentId = currentUser.id ?? currentUser.student_id;
+    const studentComplaints = complaints.filter(c => (c.studentId ?? c.student_id) === studentId);
     const pending = studentComplaints.filter(c => c.status === 'pending').length;
     const resolved = studentComplaints.filter(c => c.status === 'resolved').length;
     
@@ -389,9 +423,16 @@ function showStudentDashboard() {
 }
 
 function showAdminDashboard() {
+    // Redirect: hide landing page, show dashboard
+    const landingPage = document.getElementById('landingPage');
+    const dashboardContainer = document.getElementById('dashboardContainer');
+    if (landingPage) landingPage.style.display = 'none';
+    if (dashboardContainer) dashboardContainer.style.display = 'block';
+
     const container = document.getElementById('dashboardContainer');
     const deptComplaints = complaints.filter(c => {
-        const student = users.find(u => u.id === c.studentId);
+        const sid = c.studentId ?? c.student_id;
+        const student = users.find(u => u.id === sid || u.student_id === sid);
         return student && student.department === currentUser.department;
     });
     
@@ -491,7 +532,8 @@ function showAdminDashboard() {
 }
 
 function renderStudentComplaints() {
-    const studentComplaints = complaints.filter(c => c.studentId === currentUser.id);
+    const studentId = currentUser?.id ?? currentUser?.student_id;
+    const studentComplaints = complaints.filter(c => (c.studentId ?? c.student_id) === studentId);
     
     if (studentComplaints.length === 0) {
         return '<p style="text-align: center; color: var(--gray); padding: 2rem;">No complaints submitted yet.</p>';
@@ -528,7 +570,7 @@ function renderStudentComplaints() {
                 <h4 class="complaint-title">${c.title}</h4>
                 <div class="complaint-meta">
                     <span><i class="fas fa-tag"></i> ${c.category}</span>
-                    <span><i class="fas fa-calendar"></i> ${new Date(c.submittedAt).toLocaleDateString()}</span>
+                    <span><i class="fas fa-calendar"></i> ${new Date(c.submittedAt ?? c.submitted_at).toLocaleDateString()}</span>
                 </div>
                 <p style="margin-bottom: 0.5rem;">${c.description}</p>
                 ${filesHtml}
@@ -548,7 +590,8 @@ function renderAdminComplaints(complaintsList) {
     }
     
     return complaintsList.map(c => {
-        const student = users.find(u => u.id === c.studentId);
+        const sid = c.studentId ?? c.student_id;
+        const student = users.find(u => u.id === sid || u.student_id === sid);
         let filesHtml = '';
         if (c.files && c.files.length) {
             filesHtml = '<div class="file-preview-container" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem;">';
@@ -578,9 +621,9 @@ function renderAdminComplaints(complaintsList) {
                 </div>
                 <h4 class="complaint-title">${c.title}</h4>
                 <div class="complaint-meta">
-                    <span><i class="fas fa-user"></i> ${student?.name || 'Unknown'} (${student?.studentId || 'N/A'})</span>
+                    <span><i class="fas fa-user"></i> ${student?.name || 'Unknown'} (${student?.student_id || student?.studentId || 'N/A'})</span>
                     <span><i class="fas fa-tag"></i> ${c.category}</span>
-                    <span><i class="fas fa-calendar"></i> ${new Date(c.submittedAt).toLocaleDateString()}</span>
+                    <span><i class="fas fa-calendar"></i> ${new Date(c.submittedAt ?? c.submitted_at).toLocaleDateString()}</span>
                 </div>
                 <p style="margin-bottom: 0.5rem;">${c.description}</p>
                 ${filesHtml}
@@ -624,29 +667,46 @@ function closeComplaintModal() {
 async function handleNewComplaint(e) {
     e.preventDefault();
     
+    const studentId = currentUser?.id ?? currentUser?.student_id;
+    if (!studentId) {
+        showNotification('Session expired. Please login again.', 'error');
+        return;
+    }
+    
     const newComplaint = {
-        student_id: currentUser.id || currentUser.student_id,
-        title: document.getElementById('complaintTitle').value,
+        studentId,
+        title: document.getElementById('complaintTitle').value.trim(),
         category: document.getElementById('complaintCategory').value,
-        description: document.getElementById('complaintDescription').value,
+        description: document.getElementById('complaintDescription').value.trim(),
         files: window.uploadedFiles || [],
         status: 'pending',
-        submitted_at: new Date().toISOString()
+        submittedAt: new Date().toISOString()
     };
     
-    // Save to Supabase
+    // Save to Supabase (map to snake_case for DB)
     if (db) {
         try {
-            const { data, error } = await db.from('complaints').insert([newComplaint]).select().single();
+            const dbRow = {
+                student_id: newComplaint.studentId,
+                title: newComplaint.title,
+                category: newComplaint.category,
+                description: newComplaint.description,
+                files: newComplaint.files,
+                status: newComplaint.status,
+                submitted_at: newComplaint.submittedAt
+            };
+            const { data, error } = await db.from('complaints').insert([dbRow]).select().single();
             if (!error && data) {
-                complaints.push(data);
+                complaints.push(normalizeComplaint(data));
+                localStorage.setItem('complaints', JSON.stringify(complaints));
                 closeComplaintModal();
-                showNotification('Complaint submitted!', 'success');
+                showNotification('Complaint submitted successfully!', 'success');
                 showStudentDashboard();
                 return;
             }
+            if (error) console.warn('Supabase insert error:', error.message);
         } catch (err) {
-            console.log('Saving locally instead');
+            console.log('Supabase failed, saving locally:', err.message);
         }
     }
     
@@ -656,7 +716,7 @@ async function handleNewComplaint(e) {
     localStorage.setItem('complaints', JSON.stringify(complaints));
     
     closeComplaintModal();
-    showNotification('Complaint submitted!', 'success');
+    showNotification('Complaint submitted successfully!', 'success');
     showStudentDashboard();
 }
 
@@ -783,14 +843,39 @@ function updateResponse(id, response) {
     }
 }
 
-function refreshComplaints() {
-    complaints = JSON.parse(localStorage.getItem('complaints')) || [];
-    document.getElementById('complaintsList').innerHTML = renderStudentComplaints();
+async function refreshComplaints() {
+    if (db) {
+        try {
+            const { data } = await db.from('complaints').select('*');
+            if (data) {
+                complaints = data.map(normalizeComplaint);
+                localStorage.setItem('complaints', JSON.stringify(complaints));
+            }
+        } catch (err) {
+            complaints = JSON.parse(localStorage.getItem('complaints')) || [];
+        }
+    } else {
+        complaints = JSON.parse(localStorage.getItem('complaints')) || [];
+    }
+    const list = document.getElementById('complaintsList');
+    if (list) list.innerHTML = renderStudentComplaints();
     showNotification('Refreshed!', 'success');
 }
 
-function refreshAdminComplaints() {
-    complaints = JSON.parse(localStorage.getItem('complaints')) || [];
+async function refreshAdminComplaints() {
+    if (db) {
+        try {
+            const { data } = await db.from('complaints').select('*');
+            if (data) {
+                complaints = data.map(normalizeComplaint);
+                localStorage.setItem('complaints', JSON.stringify(complaints));
+            }
+        } catch (err) {
+            complaints = JSON.parse(localStorage.getItem('complaints')) || [];
+        }
+    } else {
+        complaints = JSON.parse(localStorage.getItem('complaints')) || [];
+    }
     filterComplaints();
     showNotification('Refreshed!', 'success');
 }
@@ -800,7 +885,8 @@ function filterComplaints() {
     const category = document.getElementById('categoryFilter')?.value || '';
     
     let filtered = complaints.filter(c => {
-        const student = users.find(u => u.id === c.studentId);
+        const sid = c.studentId ?? c.student_id;
+        const student = users.find(u => u.id === sid || u.student_id === sid);
         return student && student.department === currentUser.department;
     });
     
@@ -846,8 +932,10 @@ function getAIResponse(msg) {
 // Auto-escalation
 function checkAutoEscalation() {
     const threeDays = 3 * 24 * 60 * 60 * 1000;
+    const submittedAt = (c) => c.submittedAt ?? c.submitted_at;
     complaints.forEach(c => {
-        if (c.status === 'pending' && Date.now() - new Date(c.submittedAt).getTime() > threeDays) {
+        const subDate = new Date(submittedAt(c)).getTime();
+        if (c.status === 'pending' && !isNaN(subDate) && Date.now() - subDate > threeDays) {
             c.status = 'escalated';
             c.escalatedAt = new Date().toISOString();
         }
@@ -929,7 +1017,8 @@ window.closeReportSection = closeReportSection;
 function showReportSection() {
     const container = document.getElementById('dashboardContainer');
     const deptComplaints = complaints.filter(c => {
-        const student = users.find(u => u.id === c.studentId);
+        const sid = c.studentId ?? c.student_id;
+        const student = users.find(u => u.id === sid || u.student_id === sid);
         return student && student.department === currentUser.department;
     });
 
@@ -1059,10 +1148,11 @@ function generateReport() {
     const statusFilter = document.getElementById('reportStatus').value;
     
     let filtered = complaints.filter(c => {
-        const student = users.find(u => u.id === c.studentId);
+        const sid = c.studentId ?? c.student_id;
+        const student = users.find(u => u.id === sid || u.student_id === sid);
         if (!student || student.department !== currentUser.department) return false;
         
-        const submittedDate = new Date(c.submittedAt);
+        const submittedDate = new Date(c.submittedAt ?? c.submitted_at);
         if (submittedDate < startDate || submittedDate > endDate) return false;
         
         if (statusFilter && c.status !== statusFilter) return false;
@@ -1132,7 +1222,7 @@ function exportReportCSV() {
     
     complaints.forEach(c => {
         const student = users.find(u => u.id === c.studentId);
-        csv += `${c.id},"${c.title}",${c.category},${c.status},"${student?.name || 'N/A'}","${student?.studentId || 'N/A'}","${new Date(c.submittedAt).toLocaleDateString()}","${c.adminResponse || 'N/A'}"\n`;
+        csv += `${c.id},"${c.title}",${c.category},${c.status},"${student?.name || 'N/A'}","${student?.studentId || 'N/A'}","${new Date(c.submittedAt ?? c.submitted_at).toLocaleDateString()}","${c.adminResponse || 'N/A'}"\n`;
     });
     
     csv += `\nSummary\n`;
@@ -1227,14 +1317,15 @@ function exportReportPDF() {
                     <th>Date</th>
                 </tr>
                 ${window.currentReportData.complaints.map(c => {
-                    const student = users.find(u => u.id === c.studentId);
+                    const sid = c.studentId ?? c.student_id;
+                    const student = users.find(u => u.id === sid || u.student_id === sid);
                     return `<tr>
                         <td>#${c.id}</td>
                         <td>${c.title}</td>
                         <td>${c.category}</td>
                         <td>${c.status}</td>
                         <td>${student?.name || 'N/A'}</td>
-                        <td>${new Date(c.submittedAt).toLocaleDateString()}</td>
+                        <td>${new Date(c.submittedAt ?? c.submitted_at).toLocaleDateString()}</td>
                     </tr>`;
                 }).join('')}
             </table>

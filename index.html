@@ -28,9 +28,9 @@
                     Grievance Portal
                 </a>
                 <nav class="nav" id="mainNav">
-                <a href="#home" class="nav-link active" onclick="showSection('home')">Home</a>
-                <a href="#about" class="nav-link" onclick="showSection('about')">About</a>
-                <a href="#contact" class="nav-link" onclick="showSection('contact')">Contact</a>
+                <a href="#home" class="nav-link active" onclick="showSection('home', event)">Home</a>
+                <a href="#about" class="nav-link" onclick="showSection('about', event)">About</a>
+                <a href="#contact" class="nav-link" onclick="showSection('contact', event)">Contact</a>
             </nav>
             <div style="display: flex; gap: 0.5rem; align-items: center;">
                 <button class="hamburger" onclick="toggleMobileNav()">
@@ -283,8 +283,8 @@
         </div>
     </div>
 
-    <!-- Dashboard Container -->
-    <div id="dashboardContainer"></div>
+    <!-- Dashboard Container (hidden until login) -->
+    <div id="dashboardContainer" style="display: none;"></div>
 
     <!-- Chatbot -->
     <button class="chatbot-btn" onclick="toggleChatbot()">
