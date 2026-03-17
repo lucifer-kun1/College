@@ -76,11 +76,38 @@ async function initializeApp() {
         });
     }
     
+    // Auto-login if user session exists
     const savedUser = localStorage.getItem('currentUser');
     if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        if (currentUser.type === 'student') showStudentDashboard();
-        else if (currentUser.type === 'admin') showAdminDashboard();
+        try {
+            currentUser = JSON.parse(savedUser);
+            console.log('Auto-login for:', currentUser.type);
+            
+            // Hide landing page and show dashboard
+            const landingPage = document.getElementById('landingPage');
+            const dashboardContainer = document.getElementById('dashboardContainer');
+            if (landingPage) landingPage.style.display = 'none';
+            if (dashboardContainer) dashboardContainer.style.display = 'block';
+            
+            if (currentUser.type === 'student') showStudentDashboard();
+            else if (currentUser.type === 'admin') showAdminDashboard();
+        } catch (e) {
+            console.error('Error parsing saved user:', e);
+            localStorage.removeItem('currentUser');
+            
+            // Ensure landing page is visible on error
+            const landingPage = document.getElementById('landingPage');
+            const dashboardContainer = document.getElementById('dashboardContainer');
+            if (landingPage) landingPage.style.display = 'block';
+            if (dashboardContainer) dashboardContainer.style.display = 'none';
+        }
+    } else {
+        // No saved user - ensure landing page is visible
+        console.log('No saved user - showing landing page');
+        const landingPage = document.getElementById('landingPage');
+        const dashboardContainer = document.getElementById('dashboardContainer');
+        if (landingPage) landingPage.style.display = 'block';
+        if (dashboardContainer) dashboardContainer.style.display = 'none';
     }
     
     setupDragAndDrop();
@@ -325,8 +352,13 @@ function showStudentDashboard() {
     const container = document.getElementById('dashboardContainer');
     const studentId = currentUser.id ?? currentUser.student_id;
     const studentComplaints = complaints.filter(c => (c.studentId ?? c.student_id) === studentId);
+    
+    // Calculate all status counts
+    const acknowledged = studentComplaints.filter(c => c.status === 'acknowledged').length;
     const pending = studentComplaints.filter(c => c.status === 'pending').length;
+    const inProgress = studentComplaints.filter(c => c.status === 'in-progress').length;
     const resolved = studentComplaints.filter(c => c.status === 'resolved').length;
+    const escalated = studentComplaints.filter(c => c.status === 'escalated').length;
     
     container.innerHTML = `
         <div class="dashboard">
@@ -353,14 +385,29 @@ function showStudentDashboard() {
                         <div class="stat-label">Total Complaints</div>
                     </div>
                     <div class="stat-card">
+                        <div class="stat-card-icon success"><i class="fas fa-eye"></i></div>
+                        <div class="stat-value">${acknowledged}</div>
+                        <div class="stat-label">Acknowledged</div>
+                    </div>
+                    <div class="stat-card">
                         <div class="stat-card-icon warning"><i class="fas fa-clock"></i></div>
                         <div class="stat-value">${pending}</div>
                         <div class="stat-label">Pending</div>
                     </div>
                     <div class="stat-card">
+                        <div class="stat-card-icon primary"><i class="fas fa-spinner"></i></div>
+                        <div class="stat-value">${inProgress}</div>
+                        <div class="stat-label">In Progress</div>
+                    </div>
+                    <div class="stat-card">
                         <div class="stat-card-icon success"><i class="fas fa-check-circle"></i></div>
                         <div class="stat-value">${resolved}</div>
                         <div class="stat-label">Resolved</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-icon danger"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div class="stat-value">${escalated}</div>
+                        <div class="stat-label">Escalated</div>
                     </div>
                 </div>
                 
@@ -433,6 +480,15 @@ function showStudentDashboard() {
     `;
     
     document.getElementById('complaintForm').addEventListener('submit', handleNewComplaint);
+    
+    // Auto-refresh every 30 seconds to check for status updates
+    if (window.studentRefreshInterval) {
+        clearInterval(window.studentRefreshInterval);
+    }
+    window.studentRefreshInterval = setInterval(() => {
+        console.log('Auto-refreshing student complaints...');
+        refreshComplaints();
+    }, 30000); // 30 seconds
 }
 
 function showAdminDashboard() {
@@ -449,8 +505,10 @@ function showAdminDashboard() {
         return student && student.department === currentUser.department;
     });
     
+    const acknowledged = deptComplaints.filter(c => c.status === 'acknowledged').length;
     const pending = deptComplaints.filter(c => c.status === 'pending').length;
-    const processing = deptComplaints.filter(c => c.status === 'processing').length;
+    const inProgress = deptComplaints.filter(c => c.status === 'in-progress').length;
+    const resolved = deptComplaints.filter(c => c.status === 'resolved').length;
     const escalated = deptComplaints.filter(c => c.status === 'escalated').length;
     
     container.innerHTML = `
@@ -478,14 +536,24 @@ function showAdminDashboard() {
                         <div class="stat-label">Total</div>
                     </div>
                     <div class="stat-card">
+                        <div class="stat-card-icon success"><i class="fas fa-eye"></i></div>
+                        <div class="stat-value">${acknowledged}</div>
+                        <div class="stat-label">Acknowledged</div>
+                    </div>
+                    <div class="stat-card">
                         <div class="stat-card-icon warning"><i class="fas fa-clock"></i></div>
                         <div class="stat-value">${pending}</div>
                         <div class="stat-label">Pending</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-card-icon primary"><i class="fas fa-spinner"></i></div>
-                        <div class="stat-value">${processing}</div>
-                        <div class="stat-label">Processing</div>
+                        <div class="stat-value">${inProgress}</div>
+                        <div class="stat-label">In Progress</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-icon success"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-value">${resolved}</div>
+                        <div class="stat-label">Resolved</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-card-icon danger"><i class="fas fa-exclamation-triangle"></i></div>
@@ -496,13 +564,24 @@ function showAdminDashboard() {
                 
                 <div class="dashboard-grid">
                     <div class="dashboard-sidebar">
+                        <h4 class="sidebar-title">Navigation</h4>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem;">
+                            <button class="btn btn-primary" onclick="showComplaintsView()" id="btnComplaints" style="width: 100%; justify-content: flex-start;">
+                                <i class="fas fa-list"></i> Complaints
+                            </button>
+                            <button class="btn btn-white" onclick="showStudentResults()" id="btnStudents" style="width: 100%; justify-content: flex-start;">
+                                <i class="fas fa-users"></i> Student Results
+                            </button>
+                        </div>
+                        
                         <h4 class="sidebar-title">Filters</h4>
                         <div class="form-group">
                             <label class="form-label">Status</label>
                             <select class="form-select" id="statusFilter" onchange="filterComplaints()">
                                 <option value="">All</option>
+                                <option value="acknowledged">Acknowledged</option>
                                 <option value="pending">Pending</option>
-                                <option value="processing">Processing</option>
+                                <option value="in-progress">In Progress</option>
                                 <option value="resolved">Resolved</option>
                                 <option value="escalated">Escalated</option>
                             </select>
@@ -544,93 +623,108 @@ function showAdminDashboard() {
     `;
 }
 
+// Helper: build file preview HTML (dark-theme safe)
+function buildFilesHtml(files) {
+    if (!files || !files.length) return '';
+    let html = `
+        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                <i class="fas fa-paperclip" style="color: var(--primary-light);"></i>
+                <strong style="color: var(--text); font-size: 0.875rem;">Attached Documents (${files.length})</strong>
+            </div>
+            <div class="file-preview-container">
+    `;
+    files.forEach((f, index) => {
+        const isVideo = f.type && f.type.startsWith('video/');
+        const isImage = f.type && f.type.startsWith('image/');
+        const isPdf = f.type === 'application/pdf';
+        const fileName = f.name || `File ${index + 1}`;
+        const fileSize = f.size ? (f.size / 1024).toFixed(1) + ' KB' : '';
+        const shortName = fileName.length > 15 ? fileName.substring(0, 12) + '...' : fileName;
+        const cardStyle = `width:150px;border-radius:8px;overflow:hidden;border:1.5px solid var(--card-border);transition:all 0.2s;background:rgba(255,255,255,0.04);`;
+        const infoStyle = `padding:0.5rem;font-size:0.75rem;`;
+        const nameStyle = `font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:0.35rem;`;
+        const sizeHtml = fileSize ? `<div style="color:var(--text-secondary);font-size:0.7rem;margin-bottom:0.35rem;">${fileSize}</div>` : '';
+        const btnRow = `<div style="display:flex;gap:0.25rem;">
+            <button onclick="event.stopPropagation();viewFile('${f.data}','${f.type}','${fileName}')" style="flex:1;padding:0.3rem;font-size:0.7rem;background:var(--gradient);color:white;border:none;border-radius:4px;cursor:pointer;font-weight:600;">View</button>
+            <button onclick="event.stopPropagation();downloadFile('${f.data}','${fileName}')" style="flex:1;padding:0.3rem;font-size:0.7rem;background:rgba(255,255,255,0.08);color:var(--primary-light);border:1px solid rgba(124,58,237,0.3);border-radius:4px;cursor:pointer;font-weight:600;">Save</button>
+        </div>`;
+
+        if (isImage) {
+            html += `<div style="${cardStyle}">
+                <img src="${f.data}" alt="${fileName}" style="width:100%;height:100px;object-fit:cover;cursor:pointer;" onclick="viewFile('${f.data}','${f.type}','${fileName}')">
+                <div style="${infoStyle}"><div style="${nameStyle}" title="${fileName}">📷 ${shortName}</div>${sizeHtml}${btnRow}</div>
+            </div>`;
+        } else if (isVideo) {
+            html += `<div style="${cardStyle}">
+                <video src="${f.data}" style="width:100%;height:100px;object-fit:cover;cursor:pointer;" onclick="viewFile('${f.data}','${f.type}','${fileName}')"></video>
+                <div style="${infoStyle}"><div style="${nameStyle}" title="${fileName}">🎥 ${shortName}</div>${sizeHtml}${btnRow}</div>
+            </div>`;
+        } else if (isPdf) {
+            html += `<div style="${cardStyle}">
+                <div style="height:100px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,0.1);cursor:pointer;" onclick="viewFile('${f.data}','${f.type}','${fileName}')">
+                    <i class="fas fa-file-pdf" style="font-size:40px;color:#ef4444;"></i>
+                </div>
+                <div style="${infoStyle}"><div style="${nameStyle}" title="${fileName}">📄 ${shortName}</div>${sizeHtml}${btnRow}</div>
+            </div>`;
+        } else {
+            html += `<div style="${cardStyle}">
+                <div style="height:100px;display:flex;align-items:center;justify-content:center;background:rgba(124,58,237,0.1);cursor:pointer;" onclick="viewFile('${f.data}','${f.type}','${fileName}')">
+                    <i class="fas fa-file" style="font-size:40px;color:var(--primary-light);"></i>
+                </div>
+                <div style="${infoStyle}"><div style="${nameStyle}" title="${fileName}">📎 ${shortName}</div>${sizeHtml}${btnRow}</div>
+            </div>`;
+        }
+    });
+    html += '</div></div>';
+    return html;
+}
+
 function renderStudentComplaints() {
     const studentId = currentUser?.id ?? currentUser?.student_id;
     const studentComplaints = complaints.filter(c => (c.studentId ?? c.student_id) === studentId);
-    
+
     if (studentComplaints.length === 0) {
-        return '<p style="text-align: center; color: var(--gray); padding: 2rem;">No complaints submitted yet.</p>';
+        return '<div class="empty-state"><i class="fas fa-inbox"></i><p>No complaints submitted yet.</p></div>';
     }
-    
-    return studentComplaints.map(c => {
-        let filesHtml = '';
-        if (c.files && c.files.length) {
-            filesHtml = '<div class="file-preview-container" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem;">';
-            c.files.forEach(f => {
-                const isVideo = f.type && f.type.startsWith('video/');
-                const isImage = f.type && f.type.startsWith('image/');
-                const isPdf = f.type === 'application/pdf';
-                
-                if (isImage) {
-                    filesHtml += `<div class="file-preview-item" style="width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); cursor: pointer;" onclick="viewFile('${f.data}', '${f.type}', '${f.name}')"><img src="${f.data}" alt="${f.name}" style="width: 100%; height: 100%; object-fit: cover;"></div>`;
-                } else if (isVideo) {
-                    filesHtml += `<div class="file-preview-item" style="width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); cursor: pointer;" onclick="viewFile('${f.data}', '${f.type}', '${f.name}')"><video src="${f.data}" style="width: 100%; height: 100%; object-fit: cover;"></div>`;
-                } else if (isPdf) {
-                    filesHtml += `<div class="file-preview-item" style="width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; background: #fee2e2; cursor: pointer;" onclick="viewFile('${f.data}', '${f.type}', '${f.name}')"><i class="fas fa-file-pdf" style="font-size: 32px; color: #ef4444;"></i></div>`;
-                } else {
-                    filesHtml += `<div class="file-preview-item" style="width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; background: #e0e7ff; cursor: pointer;" onclick="viewFile('${f.data}', '${f.type}', '${f.name}')"><i class="fas fa-file" style="font-size: 32px; color: #6366f1;"></i></div>`;
-                }
-            });
-            filesHtml += '</div>';
-        }
-        
-        return `
-            <div class="complaint-item ${c.status}">
-                <div class="complaint-header">
-                    <span class="complaint-id">#${c.id}</span>
-                    <span class="status-badge status-${c.status}">${c.status}</span>
-                </div>
-                <h4 class="complaint-title">${c.title}</h4>
-                <div class="complaint-meta">
-                    <span><i class="fas fa-tag"></i> ${c.category}</span>
-                    <span><i class="fas fa-calendar"></i> ${new Date(c.submittedAt ?? c.submitted_at).toLocaleDateString()}</span>
-                </div>
-                <p style="margin-bottom: 0.5rem;">${c.description}</p>
-                ${filesHtml}
-                ${c.adminResponse ? `
-                    <div style="margin-top: 1rem; padding: 1rem; background: white; border-radius: 8px;">
-                        <strong>Response:</strong> ${c.adminResponse}
-                    </div>
-                ` : ''}
+
+    return studentComplaints.map(c => `
+        <div class="complaint-item ${c.status}">
+            <div class="complaint-header">
+                <span class="complaint-id">#${c.id}</span>
+                <span class="status-badge status-${c.status}">${c.status.replace('-', ' ').toUpperCase()}</span>
             </div>
-        `;
-    }).join('');
+            <h4 class="complaint-title">${c.title}</h4>
+            <div class="complaint-meta">
+                <span><i class="fas fa-tag"></i> ${c.category}</span>
+                <span><i class="fas fa-calendar"></i> ${new Date(c.submittedAt ?? c.submitted_at).toLocaleDateString()}</span>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6;">${c.description}</p>
+            ${buildFilesHtml(c.files)}
+            ${c.adminResponse ? `
+                <div class="admin-response-box">
+                    <strong><i class="fas fa-reply"></i> Admin Response:</strong>
+                    <p>${c.adminResponse}</p>
+                </div>
+            ` : ''}
+        </div>
+    `).join('');
 }
 
 function renderAdminComplaints(complaintsList) {
     if (complaintsList.length === 0) {
-        return '<p style="text-align: center; color: var(--gray); padding: 2rem;">No complaints found.</p>';
+        return '<div class="empty-state"><i class="fas fa-inbox"></i><p>No complaints found.</p></div>';
     }
-    
+
     return complaintsList.map(c => {
         const sid = c.studentId ?? c.student_id;
         const student = users.find(u => u.id === sid || u.student_id === sid);
-        let filesHtml = '';
-        if (c.files && c.files.length) {
-            filesHtml = '<div class="file-preview-container" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem;">';
-            c.files.forEach(f => {
-                const isVideo = f.type && f.type.startsWith('video/');
-                const isImage = f.type && f.type.startsWith('image/');
-                const isPdf = f.type === 'application/pdf';
-                
-                if (isImage) {
-                    filesHtml += `<div class="file-preview-item" style="width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); cursor: pointer;" onclick="viewFile('${f.data}', '${f.type}', '${f.name}')"><img src="${f.data}" alt="${f.name}" style="width: 100%; height: 100%; object-fit: cover;" title="${f.name}"></div>`;
-                } else if (isVideo) {
-                    filesHtml += `<div class="file-preview-item" style="width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); cursor: pointer;" onclick="viewFile('${f.data}', '${f.type}', '${f.name}')"><video src="${f.data}" style="width: 100%; height: 100%; object-fit: cover;" title="${f.name}"></video></div>`;
-                } else if (isPdf) {
-                    filesHtml += `<div class="file-preview-item" style="width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; background: #fee2e2; cursor: pointer;" onclick="viewFile('${f.data}', '${f.type}', '${f.name}')" title="${f.name}"><i class="fas fa-file-pdf" style="font-size: 32px; color: #ef4444;"></i></div>`;
-                } else {
-                    filesHtml += `<div class="file-preview-item" style="width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; background: #e0e7ff; cursor: pointer;" onclick="viewFile('${f.data}', '${f.type}', '${f.name}')" title="${f.name}"><i class="fas fa-file" style="font-size: 32px; color: #6366f1;"></i></div>`;
-                }
-            });
-            filesHtml += '</div>';
-        }
-        
+
         return `
             <div class="complaint-item ${c.status}">
                 <div class="complaint-header">
                     <span class="complaint-id">#${c.id}</span>
-                    <span class="status-badge status-${c.status}">${c.status}</span>
+                    <span class="status-badge status-${c.status}">${c.status.replace('-', ' ').toUpperCase()}</span>
                 </div>
                 <h4 class="complaint-title">${c.title}</h4>
                 <div class="complaint-meta">
@@ -638,16 +732,27 @@ function renderAdminComplaints(complaintsList) {
                     <span><i class="fas fa-tag"></i> ${c.category}</span>
                     <span><i class="fas fa-calendar"></i> ${new Date(c.submittedAt ?? c.submitted_at).toLocaleDateString()}</span>
                 </div>
-                <p style="margin-bottom: 0.5rem;">${c.description}</p>
-                ${filesHtml}
+                <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; margin-bottom: 0.5rem;">${c.description}</p>
+                ${buildFilesHtml(c.files)}
                 <div class="complaint-actions">
-                    <select onchange="updateStatus(${c.id}, this.value)">
-                        <option value="pending" ${c.status === 'pending' ? 'selected' : ''}>Pending</option>
-                        <option value="processing" ${c.status === 'processing' ? 'selected' : ''}>Processing</option>
-                        <option value="resolved" ${c.status === 'resolved' ? 'selected' : ''}>Resolved</option>
-                        <option value="escalated" ${c.status === 'escalated' ? 'selected' : ''}>Escalated</option>
-                    </select>
-                    <textarea placeholder="Enter response..." onblur="updateResponse(${c.id}, this.value)">${c.adminResponse || ''}</textarea>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
+                        <button class="btn ${c.status === 'acknowledged' ? 'btn-primary' : 'btn-outline'}" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="updateStatus('${c.id}', 'acknowledged')">
+                            <i class="fas fa-eye"></i> Acknowledged
+                        </button>
+                        <button class="btn ${c.status === 'pending' ? 'btn-primary' : 'btn-outline'}" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="updateStatus('${c.id}', 'pending')">
+                            <i class="fas fa-clock"></i> Pending
+                        </button>
+                        <button class="btn ${c.status === 'in-progress' ? 'btn-primary' : 'btn-outline'}" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="updateStatus('${c.id}', 'in-progress')">
+                            <i class="fas fa-spinner"></i> In Progress
+                        </button>
+                        <button class="btn ${c.status === 'resolved' ? 'btn-primary' : 'btn-outline'}" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="updateStatus('${c.id}', 'resolved')">
+                            <i class="fas fa-check-circle"></i> Resolved
+                        </button>
+                        <button class="btn ${c.status === 'escalated' ? 'btn-primary' : 'btn-outline'}" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="updateStatus('${c.id}', 'escalated')">
+                            <i class="fas fa-exclamation-triangle"></i> Escalated
+                        </button>
+                    </div>
+                    <textarea placeholder="Enter response..." onblur="updateResponse('${c.id}', this.value)" style="width: 100%; min-height: 60px;">${c.adminResponse || ''}</textarea>
                 </div>
             </div>
         `;
@@ -835,20 +940,83 @@ function removeUploadedFile(el, name) {
 }
 
 async function updateStatus(id, status) {
-    const c = complaints.find(x => x.id === id);
+    console.log('updateStatus called - ID:', id, 'Type:', typeof id, 'Status:', status);
+    console.log('Available complaints:', complaints.map(c => ({ id: c.id, type: typeof c.id })));
+    
+    // Try to find complaint with flexible ID matching
+    const c = complaints.find(x => x.id == id || String(x.id) === String(id));
+    
     if (c) {
+        console.log('Found complaint:', c);
         c.status = status;
         c.lastUpdated = new Date().toISOString();
         localStorage.setItem('complaints', JSON.stringify(complaints));
+        
         if (db) {
-            try { await db.collection('complaints').doc(String(id)).update({ status, lastUpdated: c.lastUpdated }); } catch (e) { console.warn('Firebase update failed'); }
+            try { 
+                await db.collection('complaints').doc(String(id)).update({ status, lastUpdated: c.lastUpdated }); 
+            } catch (e) { 
+                console.warn('Firebase update failed:', e); 
+            }
         }
-        showNotification('Status updated!', 'success');
+        
+        const statusText = status.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        showNotification('Status updated to ' + statusText + '!', 'success');
+        
+        // Refresh the admin complaints view to show updated status
+        if (currentUser && currentUser.type === 'admin') {
+            const statusFilter = document.getElementById('statusFilter')?.value || '';
+            const categoryFilter = document.getElementById('categoryFilter')?.value || '';
+            
+            let filtered = complaints.filter(c => {
+                const sid = c.studentId ?? c.student_id;
+                const student = users.find(u => u.id === sid || u.student_id === sid);
+                return student && student.department === currentUser.department;
+            });
+            
+            if (statusFilter) filtered = filtered.filter(c => c.status === statusFilter);
+            if (categoryFilter) filtered = filtered.filter(c => c.category === categoryFilter);
+            
+            const listElement = document.getElementById('adminComplaintsList');
+            if (listElement) {
+                console.log('Refreshing UI with', filtered.length, 'complaints');
+                listElement.innerHTML = renderAdminComplaints(filtered);
+            }
+            
+            // Update stats
+            const deptComplaints = complaints.filter(c => {
+                const sid = c.studentId ?? c.student_id;
+                const student = users.find(u => u.id === sid || u.student_id === sid);
+                return student && student.department === currentUser.department;
+            });
+            
+            const acknowledged = deptComplaints.filter(c => c.status === 'acknowledged').length;
+            const pending = deptComplaints.filter(c => c.status === 'pending').length;
+            const inProgress = deptComplaints.filter(c => c.status === 'in-progress').length;
+            const resolved = deptComplaints.filter(c => c.status === 'resolved').length;
+            const escalated = deptComplaints.filter(c => c.status === 'escalated').length;
+            
+            // Update stat cards if they exist
+            const statCards = document.querySelectorAll('.stat-card .stat-value');
+            if (statCards.length >= 6) {
+                statCards[0].textContent = deptComplaints.length;
+                statCards[1].textContent = acknowledged;
+                statCards[2].textContent = pending;
+                statCards[3].textContent = inProgress;
+                statCards[4].textContent = resolved;
+                statCards[5].textContent = escalated;
+                console.log('Stats updated');
+            }
+        }
+    } else {
+        console.error('Complaint NOT found with id:', id);
+        console.error('Searched in complaints:', complaints);
+        showNotification('Error: Complaint not found!', 'error');
     }
 }
 
 async function updateResponse(id, response) {
-    const c = complaints.find(x => x.id === id);
+    const c = complaints.find(x => x.id == id || String(x.id) === String(id));
     if (c) {
         c.adminResponse = response;
         c.lastUpdated = new Date().toISOString();
@@ -860,20 +1028,60 @@ async function updateResponse(id, response) {
 }
 
 async function refreshComplaints() {
+    console.log('Refreshing student complaints...');
+    
     if (db) {
         try {
             const complaintsSnap = await db.collection('complaints').get();
             complaints = complaintsSnap.docs.map(doc => normalizeComplaint({ id: doc.id, ...doc.data() }));
             localStorage.setItem('complaints', JSON.stringify(complaints));
+            console.log('Loaded from Firebase:', complaints.length, 'complaints');
         } catch (err) {
+            console.log('Firebase error, using localStorage:', err.message);
             complaints = JSON.parse(localStorage.getItem('complaints')) || [];
         }
     } else {
         complaints = JSON.parse(localStorage.getItem('complaints')) || [];
+        console.log('Loaded from localStorage:', complaints.length, 'complaints');
     }
+    
+    // Update complaints list
     const list = document.getElementById('complaintsList');
-    if (list) list.innerHTML = renderStudentComplaints();
-    showNotification('Refreshed!', 'success');
+    if (list) {
+        list.innerHTML = renderStudentComplaints();
+        console.log('Complaints list updated');
+    }
+    
+    // Update stats
+    const studentId = currentUser?.id ?? currentUser?.student_id;
+    const studentComplaints = complaints.filter(c => (c.studentId ?? c.student_id) === studentId);
+    
+    const acknowledged = studentComplaints.filter(c => c.status === 'acknowledged').length;
+    const pending = studentComplaints.filter(c => c.status === 'pending').length;
+    const inProgress = studentComplaints.filter(c => c.status === 'in-progress').length;
+    const resolved = studentComplaints.filter(c => c.status === 'resolved').length;
+    const escalated = studentComplaints.filter(c => c.status === 'escalated').length;
+    
+    // Update stat cards
+    const statCards = document.querySelectorAll('.stat-card .stat-value');
+    if (statCards.length >= 6) {
+        statCards[0].textContent = studentComplaints.length;
+        statCards[1].textContent = acknowledged;
+        statCards[2].textContent = pending;
+        statCards[3].textContent = inProgress;
+        statCards[4].textContent = resolved;
+        statCards[5].textContent = escalated;
+        console.log('Stats updated:', {
+            total: studentComplaints.length,
+            acknowledged,
+            pending,
+            inProgress,
+            resolved,
+            escalated
+        });
+    }
+    
+    showNotification('Refreshed! Status updated.', 'success');
 }
 
 async function refreshAdminComplaints() {
@@ -906,6 +1114,140 @@ function filterComplaints() {
     if (category) filtered = filtered.filter(c => c.category === category);
     
     document.getElementById('adminComplaintsList').innerHTML = renderAdminComplaints(filtered);
+}
+
+function showComplaintsView() {
+    document.getElementById('btnComplaints').className = 'btn btn-primary';
+    document.getElementById('btnStudents').className = 'btn btn-white';
+    
+    const mainContent = document.querySelector('.dashboard-main');
+    if (mainContent) {
+        mainContent.innerHTML = `
+            <h4 class="sidebar-title">Complaints</h4>
+            <div class="complaints-list" id="adminComplaintsList">
+                ${renderAdminComplaints(complaints.filter(c => {
+                    const sid = c.studentId ?? c.student_id;
+                    const student = users.find(u => u.id === sid || u.student_id === sid);
+                    return student && student.department === currentUser.department;
+                }))}
+            </div>
+        `;
+    }
+}
+
+function showStudentResults() {
+    document.getElementById('btnComplaints').className = 'btn btn-white';
+    document.getElementById('btnStudents').className = 'btn btn-primary';
+    
+    const deptStudents = users.filter(u => u.department === currentUser.department);
+    
+    const mainContent = document.querySelector('.dashboard-main');
+    if (mainContent) {
+        mainContent.innerHTML = `
+            <h4 class="sidebar-title">Student Results</h4>
+            <div style="margin-bottom: 1rem;">
+                <input type="text" class="form-input" id="studentSearch" placeholder="Search by name or student ID..." onkeyup="filterStudents()" style="width: 100%;">
+            </div>
+            <div class="complaints-list" id="studentResultsList">
+                ${renderStudentResults(deptStudents)}
+            </div>
+        `;
+    }
+}
+
+function renderStudentResults(studentsList) {
+    if (studentsList.length === 0) {
+        return '<p style="text-align: center; color: var(--gray); padding: 2rem;">No students found in this department.</p>';
+    }
+    
+    return studentsList.map(student => {
+        const sid = student.id ?? student.student_id;
+        const studentComplaints = complaints.filter(c => (c.studentId ?? c.student_id) === sid);
+        const acknowledged = studentComplaints.filter(c => c.status === 'acknowledged').length;
+        const pending = studentComplaints.filter(c => c.status === 'pending').length;
+        const inProgress = studentComplaints.filter(c => c.status === 'in-progress').length;
+        const resolved = studentComplaints.filter(c => c.status === 'resolved').length;
+        const escalated = studentComplaints.filter(c => c.status === 'escalated').length;
+        
+        return `
+            <div class="complaint-item" style="border-left-color: var(--primary);">
+                <div class="complaint-header">
+                    <span class="complaint-id"><i class="fas fa-user"></i> ${student.name}</span>
+                    <span class="status-badge" style="background: rgba(99, 102, 241, 0.1); color: var(--primary);">
+                        ${studentComplaints.length} Complaints
+                    </span>
+                </div>
+                <div class="complaint-meta" style="margin-bottom: 1rem;">
+                    <span><i class="fas fa-id-card"></i> ${student.student_id ?? student.studentId ?? 'N/A'}</span>
+                    <span><i class="fas fa-envelope"></i> ${student.email}</span>
+                    <span><i class="fas fa-building"></i> ${student.department}</span>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.75rem; margin-top: 1rem;">
+                    <div style="text-align: center; padding: 0.75rem; background: rgba(34, 197, 94, 0.1); border-radius: 8px;">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--success);">${acknowledged}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Acknowledged</div>
+                    </div>
+                    <div style="text-align: center; padding: 0.75rem; background: rgba(245, 158, 11, 0.1); border-radius: 8px;">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--warning);">${pending}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Pending</div>
+                    </div>
+                    <div style="text-align: center; padding: 0.75rem; background: rgba(99, 102, 241, 0.1); border-radius: 8px;">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary);">${inProgress}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">In Progress</div>
+                    </div>
+                    <div style="text-align: center; padding: 0.75rem; background: rgba(16, 185, 129, 0.1); border-radius: 8px;">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--success);">${resolved}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Resolved</div>
+                    </div>
+                    <div style="text-align: center; padding: 0.75rem; background: rgba(239, 68, 68, 0.1); border-radius: 8px;">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--danger);">${escalated}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Escalated</div>
+                    </div>
+                </div>
+                
+                ${studentComplaints.length > 0 ? `
+                    <button class="btn btn-outline" onclick="viewStudentComplaints('${sid}')" style="width: 100%; margin-top: 1rem;">
+                        <i class="fas fa-eye"></i> View All Complaints
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+function filterStudents() {
+    const searchTerm = document.getElementById('studentSearch')?.value.toLowerCase() || '';
+    const deptStudents = users.filter(u => u.department === currentUser.department);
+    
+    const filtered = deptStudents.filter(student => {
+        const name = (student.name || '').toLowerCase();
+        const studentId = (student.student_id || student.studentId || '').toLowerCase();
+        const email = (student.email || '').toLowerCase();
+        return name.includes(searchTerm) || studentId.includes(searchTerm) || email.includes(searchTerm);
+    });
+    
+    document.getElementById('studentResultsList').innerHTML = renderStudentResults(filtered);
+}
+
+function viewStudentComplaints(studentId) {
+    const student = users.find(u => u.id === studentId || u.student_id === studentId || u.studentId === studentId);
+    const studentComplaints = complaints.filter(c => (c.studentId ?? c.student_id) === studentId);
+    
+    const mainContent = document.querySelector('.dashboard-main');
+    if (mainContent) {
+        mainContent.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                <button class="btn btn-white" onclick="showStudentResults()">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <h4 class="sidebar-title" style="margin: 0;">Complaints by ${student?.name || 'Unknown'}</h4>
+            </div>
+            <div class="complaints-list">
+                ${renderAdminComplaints(studentComplaints)}
+            </div>
+        `;
+    }
 }
 
 // Chatbot
@@ -992,11 +1334,78 @@ function viewFile(dataUrl, type, filename) {
     }
 }
 
+// Download File
+function downloadFile(dataUrl, filename) {
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => document.body.removeChild(a), 100);
+}
+
 // Logout
 function logout() {
-    currentUser = null;
-    localStorage.removeItem('currentUser');
-    location.reload();
+    try {
+        console.log('=== LOGOUT STARTED ===');
+        
+        // Stop auto-refresh if running
+        if (window.studentRefreshInterval) {
+            clearInterval(window.studentRefreshInterval);
+            console.log('Auto-refresh stopped');
+        }
+        
+        // Clear ALL session data
+        currentUser = null;
+        localStorage.removeItem('currentUser');
+        sessionStorage.clear();
+        
+        console.log('Session data cleared');
+        console.log('currentUser:', currentUser);
+        console.log('localStorage currentUser:', localStorage.getItem('currentUser'));
+        
+        // Hide dashboard and show landing page immediately
+        const landingPage = document.getElementById('landingPage');
+        const dashboardContainer = document.getElementById('dashboardContainer');
+        
+        if (dashboardContainer) {
+            dashboardContainer.style.display = 'none';
+            dashboardContainer.innerHTML = '';
+            console.log('Dashboard hidden and cleared');
+        }
+        
+        if (landingPage) {
+            landingPage.style.display = 'block';
+            console.log('Landing page shown');
+        }
+        
+        // Show notification
+        showNotification('Logged out successfully!', 'success');
+        
+        // Clean URL and reload after a short delay
+        setTimeout(() => {
+            console.log('=== RELOADING PAGE ===');
+            // Remove any query parameters and reload
+            window.history.replaceState({}, document.title, window.location.pathname);
+            window.location.reload();
+        }, 800);
+        
+    } catch (error) {
+        console.error('Logout error:', error);
+        // Emergency fallback - clear everything and reload
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Ensure landing page is visible
+        const landingPage = document.getElementById('landingPage');
+        const dashboardContainer = document.getElementById('dashboardContainer');
+        if (landingPage) landingPage.style.display = 'block';
+        if (dashboardContainer) dashboardContainer.style.display = 'none';
+        
+        setTimeout(() => {
+            window.location.href = window.location.pathname;
+        }, 500);
+    }
 }
 
 // Global exports
@@ -1018,6 +1427,12 @@ window.filterComplaints = filterComplaints;
 window.toggleChatbot = toggleChatbot;
 window.sendMessage = sendMessage;
 window.viewFile = viewFile;
+window.downloadFile = downloadFile;
+window.buildFilesHtml = buildFilesHtml;
+window.showComplaintsView = showComplaintsView;
+window.showStudentResults = showStudentResults;
+window.filterStudents = filterStudents;
+window.viewStudentComplaints = viewStudentComplaints;
 
 // Report Generation Functions
 window.showReportSection = showReportSection;
@@ -1234,7 +1649,7 @@ function exportReportCSV() {
     
     complaints.forEach(c => {
         const student = users.find(u => u.id === c.studentId);
-        csv += `${c.id},"${c.title}",${c.category},${c.status},"${student?.name || 'N/A'}","${student?.studentId || 'N/A'}","${new Date(c.submittedAt ?? c.submitted_at).toLocaleDateString()}","${c.adminResponse || 'N/A'}"\n`;
+        csv += `${c.id},"${c.title}",${c.category},${c.status},"${student?.name || 'N/A'}","${student?.student_id || student?.studentId || 'N/A'}","${new Date(c.submittedAt ?? c.submitted_at).toLocaleDateString()}","${c.adminResponse || 'N/A'}"\n`;
     });
     
     csv += `\nSummary\n`;

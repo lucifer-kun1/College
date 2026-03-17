@@ -7,10 +7,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
+    <!-- Animated Background -->
     <div class="bg-pattern">
         <div class="floating-shapes">
             <div class="shape shape-1"></div>
@@ -28,31 +30,30 @@
                     Grievance Portal
                 </a>
                 <nav class="nav" id="mainNav">
-                <a href="#home" class="nav-link active" onclick="showSection('home', event)">Home</a>
-                <a href="#about" class="nav-link" onclick="showSection('about', event)">About</a>
-                <a href="#contact" class="nav-link" onclick="showSection('contact', event)">Contact</a>
-            </nav>
-            <div style="display: flex; gap: 0.5rem; align-items: center;">
-                <button class="hamburger" onclick="toggleMobileNav()">
+                    <a href="#home" class="nav-link active" onclick="showSection('home', event)">Home</a>
+                    <a href="#about" class="nav-link" onclick="showSection('about', event)">About</a>
+                    <a href="#contact" class="nav-link" onclick="showSection('contact', event)">Contact</a>
+                </nav>
+                <button class="hamburger" onclick="toggleMobileNav()" aria-label="Toggle menu">
                     <i class="fas fa-bars"></i>
                 </button>
             </div>
-            </div>
         </header>
 
+        <!-- Home Section -->
         <main class="main" id="home">
             <section class="hero">
                 <div class="hero-badge">
-                    <i class="fas fa-bolt"></i> Quick & Easy
+                    <i class="fas fa-bolt"></i> Fast &amp; Transparent
                 </div>
                 <h1 class="hero-title">College Grievance Portal</h1>
-                <p class="hero-subtitle">Your voice matters. Submit complaints, track status, and get resolved - all in one place. Fast, secure, and transparent.</p>
-                
+                <p class="hero-subtitle">Your voice matters. Submit complaints, track status, and get resolved — all in one secure place.</p>
+
                 <div class="login-grid">
                     <div class="login-card">
                         <div class="login-card-icon"><i class="fas fa-user-graduate"></i></div>
                         <h3>Student Portal</h3>
-                        <p>Submit complaints, track status, and manage your grievances easily.</p>
+                        <p>Submit complaints, track their status, and manage your grievances with ease.</p>
                         <div class="btn-group">
                             <button class="btn btn-primary" onclick="openModal('studentLogin')">
                                 <i class="fas fa-sign-in-alt"></i> Login
@@ -66,7 +67,7 @@
                     <div class="login-card">
                         <div class="login-card-icon"><i class="fas fa-user-shield"></i></div>
                         <h3>Admin Portal</h3>
-                        <p>Manage complaints, update status, and handle department issues.</p>
+                        <p>Manage complaints, update statuses, and handle department-level issues.</p>
                         <div class="btn-group">
                             <button class="btn btn-primary" onclick="openModal('adminLogin')">
                                 <i class="fas fa-sign-in-alt"></i> Admin Login
@@ -82,9 +83,8 @@
             <section class="section">
                 <div class="section-header">
                     <h2 class="section-title">About Us</h2>
-                    <p style="color: var(--gray);">Everything you need to know about our grievance system</p>
+                    <p style="color: var(--text-secondary);">Everything you need to know about our grievance system</p>
                 </div>
-                
                 <div class="about-grid">
                     <div class="about-card">
                         <h4><i class="fas fa-bullseye"></i> Our Mission</h4>
@@ -92,16 +92,15 @@
                     </div>
                     <div class="about-card">
                         <h4><i class="fas fa-cog"></i> Key Features</h4>
-                        <ul style="list-style: none;">
-                            <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--success);"></i> Real-time status tracking</li>
-                            <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--success);"></i> Secure file uploads</li>
-                            <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--success);"></i> 24/7 AI support</li>
-                            <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--success);"></i> Auto-escalation</li>
+                        <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem;">
+                            <li style="color: var(--text-secondary);"><i class="fas fa-check" style="color: var(--success); margin-right: 0.5rem;"></i> Real-time status tracking</li>
+                            <li style="color: var(--text-secondary);"><i class="fas fa-check" style="color: var(--success); margin-right: 0.5rem;"></i> Secure file uploads</li>
+                            <li style="color: var(--text-secondary);"><i class="fas fa-check" style="color: var(--success); margin-right: 0.5rem;"></i> 24/7 AI support</li>
+                            <li style="color: var(--text-secondary);"><i class="fas fa-check" style="color: var(--success); margin-right: 0.5rem;"></i> Auto-escalation</li>
                         </ul>
                     </div>
                 </div>
-
-                <div class="about-card" style="margin-top: 2rem;">
+                <div class="about-card" style="margin-top: 1.25rem;">
                     <h4><i class="fas fa-building"></i> Departments Covered</h4>
                     <div class="dept-grid">
                         <div class="dept-item">Computer Science</div>
@@ -123,9 +122,8 @@
             <section class="section">
                 <div class="section-header">
                     <h2 class="section-title">Contact Us</h2>
-                    <p style="color: var(--gray);">Get in touch with us for any queries</p>
+                    <p style="color: var(--text-secondary);">Get in touch with us for any queries</p>
                 </div>
-                
                 <div class="contact-grid">
                     <div class="contact-card">
                         <div class="contact-icon"><i class="fas fa-code"></i></div>
@@ -147,7 +145,7 @@
         </main>
     </div>
 
-    <!-- Modals -->
+    <!-- Student Login Modal -->
     <div class="modal-overlay" id="studentLoginModal">
         <div class="modal">
             <div class="modal-header">
@@ -158,11 +156,11 @@
                 <form id="studentLoginForm">
                     <div class="form-group">
                         <label class="form-label">Email</label>
-                        <input type="email" class="form-input" id="studentEmail" required>
+                        <input type="email" class="form-input" id="studentEmail" placeholder="your@email.com" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Password</label>
-                        <input type="password" class="form-input" id="studentPassword" required>
+                        <input type="password" class="form-input" id="studentPassword" placeholder="••••••••" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Department (to complain about)</label>
@@ -181,7 +179,7 @@
                             <option value="JR.CLG Commerce-12">JR.CLG Commerce-12</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
                         <i class="fas fa-sign-in-alt"></i> Login
                     </button>
                 </form>
@@ -189,6 +187,7 @@
         </div>
     </div>
 
+    <!-- Student Register Modal -->
     <div class="modal-overlay" id="studentRegisterModal">
         <div class="modal">
             <div class="modal-header">
@@ -199,15 +198,15 @@
                 <form id="studentRegisterForm">
                     <div class="form-group">
                         <label class="form-label">Full Name</label>
-                        <input type="text" class="form-input" id="regName" required>
+                        <input type="text" class="form-input" id="regName" placeholder="John Doe" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Email</label>
-                        <input type="email" class="form-input" id="regEmail" required>
+                        <input type="email" class="form-input" id="regEmail" placeholder="your@email.com" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Student ID</label>
-                        <input type="text" class="form-input" id="regStudentId" required>
+                        <input type="text" class="form-input" id="regStudentId" placeholder="e.g. STU2024001" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Department</label>
@@ -228,13 +227,13 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Password</label>
-                        <input type="password" class="form-input" id="regPassword" required>
+                        <input type="password" class="form-input" id="regPassword" placeholder="••••••••" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Confirm Password</label>
-                        <input type="password" class="form-input" id="regConfirmPassword" required>
+                        <input type="password" class="form-input" id="regConfirmPassword" placeholder="••••••••" required>
                     </div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
                         <i class="fas fa-user-plus"></i> Register
                     </button>
                 </form>
@@ -242,6 +241,7 @@
         </div>
     </div>
 
+    <!-- Admin Login Modal -->
     <div class="modal-overlay" id="adminLoginModal">
         <div class="modal">
             <div class="modal-header">
@@ -252,11 +252,11 @@
                 <form id="adminLoginForm">
                     <div class="form-group">
                         <label class="form-label">Admin Email</label>
-                        <input type="email" class="form-input" id="adminEmail" required>
+                        <input type="email" class="form-input" id="adminEmail" placeholder="admin@dept.edu" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Password</label>
-                        <input type="password" class="form-input" id="adminPassword" required>
+                        <input type="password" class="form-input" id="adminPassword" placeholder="••••••••" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Department</label>
@@ -275,7 +275,7 @@
                             <option value="JR.CLG Commerce-12">JR.CLG Commerce-12</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">
                         <i class="fas fa-sign-in-alt"></i> Login
                     </button>
                 </form>
@@ -283,23 +283,23 @@
         </div>
     </div>
 
-    <!-- Dashboard Container (hidden until login) -->
+    <!-- Dashboard Container -->
     <div id="dashboardContainer" style="display: none;"></div>
 
     <!-- Chatbot -->
-    <button class="chatbot-btn" onclick="toggleChatbot()">
+    <button class="chatbot-btn" onclick="toggleChatbot()" aria-label="Open AI Assistant">
         <i class="fas fa-robot"></i>
     </button>
     <div class="chatbot-modal" id="chatbotModal">
         <div class="chatbot-header">
             <h4><i class="fas fa-robot"></i> AI Assistant</h4>
-            <button class="modal-close" style="background: rgba(255,255,255,0.2); color: white;" onclick="toggleChatbot()">&times;</button>
+            <button class="modal-close" style="background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.2); color: white;" onclick="toggleChatbot()">&times;</button>
         </div>
         <div class="chatbot-messages" id="chatbotMessages">
             <div class="chat-msg bot">Hello! How can I help you today?</div>
         </div>
         <div class="chatbot-input">
-            <input type="text" id="chatbotInput" placeholder="Type a message...">
+            <input type="text" id="chatbotInput" placeholder="Ask me anything...">
             <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
